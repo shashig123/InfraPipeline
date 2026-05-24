@@ -1,0 +1,25 @@
+name: Infra pipeline
+on:  
+  workflow_dispatch:
+jobs:
+  terraformPlan:
+    runs-on: apprunner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+      - name: Azure Login
+        uses: Azure/login@v3
+        with:
+          # ClientId of the Azure Service principal created.
+          client-id: ${{ secrets.CLIENT_ID}}
+          # TenantId of the Azure Service principal created.
+          tenant-id: ${{secrets.TENAT_ID}}
+          # Azure subscriptionId
+          subscription-id: ${{secrets.SUBSCRIPTION_ID}}
+      - name: terrafornInit
+        run: terraform init
+      - name: terraformPlan
+        run: terraform plan
+      
+     
+    
