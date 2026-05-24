@@ -1,6 +1,9 @@
 name: Infra pipeline
 on:  
   workflow_dispatch:
+permissions: 
+  id-token: write
+  contents: read
 jobs:
   terraformPlan:
     runs-on: self-hosted
