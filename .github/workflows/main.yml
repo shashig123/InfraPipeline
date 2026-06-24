@@ -17,11 +17,11 @@ jobs:
         uses: Azure/login@v3
         with:
           # ClientId of the Azure Service principal created.
-          client-id: ${{ secrets.CLIENT_ID}}
+          client-id: ${{ secrets.AZURE_CLIENT_ID}}
           # TenantId of the Azure Service principal created.
-          tenant-id: ${{secrets.TENAT_ID}}
+          tenant-id: ${{secrets.AZURE_TENANT_ID}}
           # Azure subscriptionId
-          subscription-id: ${{secrets.SUBSCRIPTION_ID}}
+          subscription-id: ${{secrets.AZURE_SUBSCRIPTION_ID}}
       - name: terrafornInit
         run: terraform init
       - name: terraformPlan
