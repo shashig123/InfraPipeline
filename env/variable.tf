@@ -1,3 +1,3 @@
 variable "rgs" {}
-variable "stgs" {}
-variable "containers" {}
+#variable "stgs" {}
+#variable "containers" {}
