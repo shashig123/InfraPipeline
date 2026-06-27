@@ -5,17 +5,17 @@ rgs = {
 
 }
 
-# stgs = {
+stgs = {
 
-#   name                     = "appstg123"
-#   account_replication_type = "GRS"
-#   account_tier             = "Standard"
+  name                     = "shashistg1234"
+  account_replication_type = "GRS"
+  account_tier             = "Standard"
 
-# }
+}
 
-# containers = {
-#   name = "appcontainer"
-# }
+containers = {
+  name = "appcontainer"
+}
 
 cluster= {
   name= "appaks"

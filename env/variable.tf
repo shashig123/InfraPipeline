@@ -1,4 +1,6 @@
 variable "rgs" {}
-#variable "stgs" {}
-#variable "containers" {}
-variable "cluster"{}
+variable "stgs" {}
+variable "containers" {}
+variable "cluster" {
+  
+}

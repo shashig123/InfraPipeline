@@ -1,0 +1,164 @@
+trigger:
+- main
+- feature
+pool: shashipool
+
+variables:
+ workdir: '$(System.DefaultWorkingDirectory)/env'
+
+
+stages:
+  - stage: BuildStage
+    jobs:
+      - job: TeraafoemInstaller
+        displayName: Terraforminstall
+        steps:
+        - task: TerraformInstaller@1
+          inputs:
+            terraformVersion: 'latest'
+
+
+
+  - stage: Scanning
+    displayName: ScanningTools
+    jobs:  
+      - job: ScanninTools
+        displayName: tflint
+        
+        steps: 
+        - task: PowerShell@2
+          displayName: Tflint scanning
+          continueOnError: true
+          inputs:
+            targetType: 'inline'
+            script: |
+              tflint --format junit | Out-File -Encoding utf8 tflint-result.xml
+        - task: PublishTestResults@2
+          displayName: publish tflint result
+          inputs:
+            testResultsFormat: 'JUnit'
+            testResultsFiles: '**/tflint-result.xml'
+            testRunTitle: 'tflint Scan'
+
+        - task: PowerShell@2
+          displayName: Tfsec scanning
+          continueOnError: true
+          inputs:
+            targetType: 'inline'
+            script: 
+              tfsec . --format junit --out tfsec-result.xml
+
+        - task: PublishTestResults@2
+          displayName: Publish tfsec result
+          inputs:
+            testResultsFormat: 'JUnit'
+            testResultsFiles: '**/tfsec-result.xml'
+            testRunTitle: 'tfsec Scan'
+        - task: PowerShell@2
+          continueOnError: true
+          displayName: Checkov scanning
+          inputs:
+            targetType: 'inline'
+            script: |
+                checkov -d . -o junitxml | Out-File -Encoding utf8 checkov-result.xml
+
+        - task: PublishTestResults@2
+          displayName: Publish checkov result
+          inputs:
+            testResultsFormat: 'JUnit'
+            testResultsFiles: '**/checkov-result.xml'
+            testRunTitle: 'checkov Scan'
+
+        - task: PowerShell@2
+          displayName: Check Repors
+          inputs:
+            targetType: 'inline'
+            script: |
+                'dir'
+
+
+  - stage: RunAllCommands
+    dependsOn: 
+        - BuildStage
+        - Scanning
+    jobs: 
+      - job: TerraformInitPlan
+        displayName: TerraformInit
+        steps:
+        - task: TerraformTask@5
+          inputs:
+            provider: 'azurerm'
+            command: 'init'
+            workingDirectory: '$(workdir)'
+            backendAzureRmUseEntraIdForAuthentication: false
+            backendServiceArm: 'shashiservice'
+            backendAzureRmResourceGroupName: 'apprg'
+            backendAzureRmStorageAccountName: 'shashistg1234'
+            backendAzureRmContainerName: 'appcontainer'
+            backendAzureRmKey: 'app.tfstate'
+
+        - task: TerraformTask@5
+          displayName: terraform validate
+          inputs:
+            provider: 'azurerm'
+            command: 'validate'
+            workingDirectory: '$(workdir)'
+
+        - task: TerraformTask@5
+          displayName: terraform Plan
+          inputs:
+            provider: 'azurerm'
+            command: 'plan'
+            workingDirectory: '$(workdir)'
+            commandOptions: '-out=tfplan'
+            environmentServiceNameAzureRM: 'shashiservice'
+
+        - task: PublishPipelineArtifact@1
+          inputs:
+            targetPath: '$(Pipeline.Workspace)'
+            artifact: 'terraform-plan'
+            publishLocation: 'pipeline'
+#===================Manual Approval
+#====================================
+  - stage: ManualApproval
+    dependsOn: RunAllCommands
+    jobs: 
+      - job: beforeApply
+        displayName: BeforeApply ManualApproval
+        pool: server
+        steps:
+        
+        - task: ManualValidation@1
+          inputs:
+            notifyUsers: 'shashijuly82@gmail.com'
+            approvers: 'shashijuly82@gmail.com'
+
+  - stage: Apply
+    displayName: TerraformApply
+    condition: succeeded ()
+
+    jobs:
+      - job: 
+      
+        displayName: Apply after approval
+        pool: shashipool
+        steps:
+        - task: TerraformTask@5
+          inputs:
+            provider: 'azurerm'
+            command: 'init'
+            workingDirectory: '$(workdir)'
+            backendAzureRmUseEntraIdForAuthentication: false
+            backendServiceArm: 'shashiservice'
+            backendAzureRmResourceGroupName: 'apprg'
+            backendAzureRmStorageAccountName: 'shashistg1234'
+            backendAzureRmContainerName: 'appcontainer'
+            backendAzureRmKey: 'app.tfstate'
+        - task: TerraformTask@5
+          displayName: terraformApply
+          inputs:
+            provider: 'azurerm'
+            command: 'apply'
+            workingDirectory: '$(workdir)'
+            commandOptions: '--auto-approve'
+            environmentServiceNameAzureRM: 'shashiservice'
